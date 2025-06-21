@@ -1,0 +1,33 @@
+Initial commit: ImageLink 이미지 호스팅 서비스
+
+주요 기능:
+- 드래그앤드롭 이미지 업로드 (웹 인터페이스)
+- API 업로드 지원 (form-data, Base64 JSON)
+- 짧은 URL 생성 및 공유 시스템
+- 고해상도 이미지 자동 리사이즈 (1024px 너비)
+- 설정 가능한 자동 이미지 삭제 시스템 (1-365일)
+- 비밀번호 보호 관리자 설정 페이지
+- 한국어 인터페이스
+
+기술 스택:
+- Frontend: React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui
+- Backend: Node.js + Express + TypeScript + Sharp + Multer
+- 라우팅: Wouter
+- 상태 관리: TanStack Query
+- 이미지 처리: Sharp (자동 리사이즈, 압축)
+- 인증: Express Session (간단한 비밀번호 보호)
+
+API 엔드포인트:
+- POST /api/upload (form-data)
+- POST /api/upload-base64 (JSON)
+- GET /i/{shortId} (이미지 접근)
+- GET /api/images (이미지 목록)
+- DELETE /api/images/{id} (이미지 삭제)
+- PATCH /api/images/{id}/expiration (만료일 설정)
+- POST /api/cleanup (만료된 이미지 정리)
+
+설정:
+- 기본 관리자 비밀번호: admin123
+- 기본 자동 삭제: 5일
+- 이미지 리사이즈: 1024px 너비
+- 홈페이지 표시 개수: 5개 (설정 가능)
