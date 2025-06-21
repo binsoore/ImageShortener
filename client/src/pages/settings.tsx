@@ -36,51 +36,27 @@ export default function Settings() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Show password dialog if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setShowPasswordDialog(true);
-    }
-  }, [isAuthenticated, isLoading]);
-
   const handleLogin = async () => {
-    if (!password.trim()) {
-      toast({
-        title: "입력 오류",
-        description: "비밀번호를 입력해주세요",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!password.trim()) return;
+    
     setIsLoggingIn(true);
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       
-      const result = await response.json();
-      
-      if (result.success) {
-        toast({
-          title: "로그인 성공",
-          description: "설정 페이지에 접근할 수 있습니다",
-        });
-        setShowPasswordDialog(false);
-        setPassword("");
-        // Refresh auth status
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      if (response.ok) {
+        window.location.reload();
       } else {
+        const error = await response.json();
         toast({
           title: "로그인 실패",
-          description: result.message,
+          description: error.message || "잘못된 비밀번호입니다",
           variant: "destructive",
         });
       }
@@ -97,32 +73,65 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { method: 'POST' });
-      toast({
-        title: "로그아웃 완료",
-        description: "안전하게 로그아웃되었습니다",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await fetch("/api/logout", { method: "POST" });
+      window.location.reload();
     } catch (error) {
-      toast({
-        title: "로그아웃 오류",
-        description: "로그아웃 중 오류가 발생했습니다",
-        variant: "destructive",
-      });
+      console.error("Logout error:", error);
     }
   };
 
-  // Fetch all images
+  // Fetch images
   const { data: imagesData, isLoading: imagesLoading } = useQuery<ImagesResponse>({
     queryKey: ["/api/images"],
+    enabled: isAuthenticated,
   });
 
-  // Set expiration for all images mutation
+  // Delete image mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (imageId: number) => {
+      const response = await apiRequest(`/api/images/${imageId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to delete image');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
+      toast({
+        title: "삭제 완료",
+        description: "이미지가 삭제되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "인증 만료",
+          description: "다시 로그인해주세요",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Set expiration mutation
   const setExpirationMutation = useMutation({
     mutationFn: async (days: number) => {
-      const images = imagesData?.images || [];
       const results = [];
+      const images = imagesData?.images || [];
       
       for (const image of images) {
         try {
@@ -168,55 +177,11 @@ export default function Settings() {
     mutationFn: async () => {
       const response = await fetch("/api/cleanup-expired", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
       
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || 'Cleanup failed');
-      }
-      
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
-      toast({
-        title: "정리 완료",
-        description: data.message,
-      });
-    },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "인증 만료",
-          description: "다시 로그인해주세요",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "정리 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete specific image
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/images/${id}`, {
-        method: "DELETE",
-      });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to delete image');
+        throw new Error(error || 'Failed to cleanup');
       }
       
       return await response.json();
@@ -257,21 +222,12 @@ export default function Settings() {
       });
       return;
     }
-
+    
     const days = parseInt(expirationDays);
-    if (days <= 0 || days > 365) {
+    if (isNaN(days) || days < 1 || days > 365) {
       toast({
-        title: "잘못된 일수",
-        description: "1일에서 365일 사이의 값을 입력해주세요",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!imagesData?.images || imagesData.images.length === 0) {
-      toast({
-        title: "이미지 없음",
-        description: "설정할 이미지가 없습니다",
+        title: "잘못된 입력",
+        description: "1일에서 365일 사이의 숫자를 입력해주세요",
         variant: "destructive",
       });
       return;
@@ -297,6 +253,43 @@ export default function Settings() {
       description: `홈페이지에 최근 ${limit}개 이미지가 표시됩니다`,
     });
   };
+
+  // Password dialog for authentication
+  if (!isLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LogIn size={20} />
+              관리자 인증
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="password">비밀번호</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                placeholder="관리자 비밀번호를 입력하세요"
+                disabled={isLoggingIn}
+              />
+            </div>
+            <Button 
+              onClick={handleLogin} 
+              className="w-full"
+              disabled={isLoggingIn || !password.trim()}
+            >
+              {isLoggingIn ? "로그인 중..." : "로그인"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const getExpirationStatus = (image: ImageType) => {
     if (!image.expiresAt) return null;
@@ -332,7 +325,7 @@ export default function Settings() {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm text-slate-600">로그인됨</p>
-                <p className="font-medium text-slate-900">{user?.email || user?.firstName || "사용자"}</p>
+                <p className="font-medium text-slate-900">관리자</p>
               </div>
               <Button variant="outline" onClick={handleLogout}>
                 로그아웃
@@ -364,7 +357,7 @@ export default function Settings() {
                   className="mt-1"
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  홈페이지에서 최근 업로드된 이미지 몇 개까지 표시할지 설정합니다
+                  홈페이지에서 보여줄 최근 이미지의 개수를 설정합니다
                 </p>
               </div>
 
@@ -422,128 +415,100 @@ export default function Settings() {
 
               <Button
                 onClick={handleSetExpiration}
-                disabled={setExpirationMutation.isPending || images.length === 0}
+                disabled={setExpirationMutation.isPending || !expirationDays || images.length === 0}
                 className="w-full"
               >
                 <Calendar size={16} className="mr-2" />
-                {setExpirationMutation.isPending ? "설정 중..." : "자동 삭제 설정"}
+                {setExpirationMutation.isPending ? "설정 중..." : "모든 이미지에 만료일 설정"}
               </Button>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Management Actions */}
-          <Card>
+        {/* Expired Images */}
+        {expiredImages.length > 0 && (
+          <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trash2 size={20} />
-                이미지 관리
+                <AlertTriangle size={20} className="text-red-500" />
+                만료된 이미지 ({expiredImages.length}개)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {expiredImages.length > 0 && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-red-700 mb-2">
-                    <AlertTriangle size={16} />
-                    <span className="font-medium">만료된 이미지 {expiredImages.length}개</span>
-                  </div>
-                  <p className="text-sm text-red-600 mb-3">
-                    다음 이미지들이 만료되어 삭제 대기 중입니다
-                  </p>
-                  <div className="space-y-1 mb-3">
-                    {expiredImages.slice(0, 3).map((image) => (
-                      <div key={image.id} className="text-xs text-red-600">
-                        • {image.originalName}
-                      </div>
-                    ))}
-                    {expiredImages.length > 3 && (
-                      <div className="text-xs text-red-600">
-                        • 외 {expiredImages.length - 3}개
-                      </div>
-                    )}
+            <CardContent>
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle size={20} className="text-red-500" />
+                  <div>
+                    <p className="font-medium text-red-900">만료된 이미지가 있습니다</p>
+                    <p className="text-sm text-red-700">{expiredImages.length}개의 이미지가 만료되어 삭제 대기 중입니다</p>
                   </div>
                 </div>
-              )}
+                <Button 
+                  onClick={() => cleanupMutation.mutate()}
+                  disabled={cleanupMutation.isPending}
+                  variant="destructive"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  {cleanupMutation.isPending ? "삭제 중..." : "지금 삭제"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <Button
-                onClick={() => cleanupMutation.mutate()}
-                disabled={cleanupMutation.isPending}
-                variant="outline"
-                className="w-full"
-              >
-                <CheckCircle size={16} className="mr-2" />
-                {cleanupMutation.isPending ? "정리 중..." : "만료된 이미지 정리"}
-              </Button>
-
-              <Separator />
-
-              <div>
-                <h4 className="font-medium mb-3">개별 이미지 삭제</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {images.map((image) => (
-                    <div
-                      key={image.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
+        {/* Image List */}
+        {images.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Images size={20} />
+                업로드된 이미지 목록 ({images.length}개)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {images.map((image) => {
+                  const status = getExpirationStatus(image);
+                  return (
+                    <div key={image.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <img
+                        <img 
                           src={`/i/${image.shortId}`}
-                          alt={image.originalName}
-                          className="w-8 h-8 object-cover rounded"
+                          alt="이미지"
+                          className="w-12 h-12 object-cover rounded"
                         />
                         <div>
-                          <p className="text-sm font-medium truncate max-w-32">
-                            {image.originalName}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {formatDistanceToNow(new Date(image.uploadedAt))} 전
-                          </p>
+                          <p className="font-medium text-sm truncate max-w-48">{image.filename}</p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span>{Math.round(image.size / 1024)}KB</span>
+                            <span>•</span>
+                            <span>{image.width}×{image.height}</span>
+                            {status && (
+                              <>
+                                <span>•</span>
+                                <Badge variant={status.status === "expired" ? "destructive" : "secondary"}>
+                                  {status.text}
+                                </Badge>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <Button
                         onClick={() => deleteMutation.mutate(image.id)}
                         disabled={deleteMutation.isPending}
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 size={14} />
                       </Button>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Info Card */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>자동 삭제 정보</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-2">작동 방식</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• 각 이미지의 업로드 시점부터 설정한 일수가 지나면 해당 이미지 삭제</li>
-                  <li>• 서버에서 1시간마다 만료된 이미지 확인</li>
-                  <li>• 이미지 파일과 메타데이터 모두 삭제</li>
-                  <li>• 삭제된 이미지는 복구할 수 없습니다</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">주의사항</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• 각 이미지는 업로드 시점부터 개별적으로 계산됩니다</li>
-                  <li>• 1일에서 365일 사이에서만 설정 가능</li>
-                  <li>• 중요한 이미지는 백업해두세요</li>
-                  <li>• 만료 전에 알림은 제공되지 않습니다</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </div>
     </div>
   );
