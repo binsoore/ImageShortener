@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Image as ImageType } from "@shared/schema";
-import { Copy, Upload, Link, Rocket, Shield, Share2, Images } from "lucide-react";
+import { Copy, Upload, Link, Rocket, Shield, Share2, Images, Clipboard } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface UploadResponse {
@@ -20,6 +20,7 @@ interface ImagesResponse {
 
 export default function Home() {
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isPasteEnabled, setIsPasteEnabled] = useState(false);
   const { toast } = useToast();
 
   // Fetch all images
@@ -92,6 +93,77 @@ export default function Home() {
       });
     },
   });
+
+  // Check clipboard API availability
+  useEffect(() => {
+    setIsPasteEnabled('clipboard' in navigator && 'read' in navigator.clipboard);
+  }, []);
+
+  // Handle paste from clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      const imageFiles: File[] = [];
+
+      for (const clipboardItem of clipboardItems) {
+        for (const type of clipboardItem.types) {
+          if (type.startsWith('image/')) {
+            const blob = await clipboardItem.getType(type);
+            const file = new File([blob], `clipboard-${Date.now()}.${type.split('/')[1]}`, { type });
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      if (imageFiles.length === 0) {
+        toast({
+          title: "클립보드에 이미지가 없습니다",
+          description: "이미지를 복사한 후 다시 시도해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      uploadMutation.mutate(imageFiles);
+    } catch (error) {
+      console.error('Clipboard paste error:', error);
+      toast({
+        title: "붙여넣기 실패",
+        description: "클립보드 접근 권한을 확인해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle keyboard paste event
+  useEffect(() => {
+    const handlePasteEvent = async (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      
+      const items = Array.from(e.clipboardData.items);
+      const imageFiles: File[] = [];
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        uploadMutation.mutate(imageFiles);
+      }
+    };
+
+    document.addEventListener('paste', handlePasteEvent);
+
+    return () => {
+      document.removeEventListener('paste', handlePasteEvent);
+    };
+  }, [uploadMutation]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -214,9 +286,27 @@ export default function Home() {
                 <span className="bg-slate-100 px-2 py-1 rounded">GIF</span>
                 <span className="bg-slate-100 px-2 py-1 rounded">WebP</span>
                 <span className="bg-slate-100 px-2 py-1 rounded">최대 10MB</span>
+                {isPasteEnabled && (
+                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">Ctrl+V 붙여넣기</span>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Clipboard Paste Button */}
+          {isPasteEnabled && (
+            <div className="mt-4 text-center">
+              <Button
+                onClick={handlePasteFromClipboard}
+                disabled={uploadMutation.isPending}
+                variant="outline"
+                className="px-6 py-2 border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+              >
+                <Clipboard className="mr-2" size={18} />
+                클립보드에서 이미지 붙여넣기
+              </Button>
+            </div>
+          )}
 
           {/* Upload Progress */}
           {uploadMutation.isPending && uploadProgress > 0 && (
