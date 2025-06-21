@@ -39,12 +39,25 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    console.error('Server error:', err);
+    
+    // Handle client disconnect gracefully
+    if (err.code === 'ECONNRESET' || err.code === 'ECONNABORTED') {
+      console.log('Client disconnected during request');
+      return;
+    }
+    
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 최대 10MB까지 업로드 가능합니다.' });
+    }
+    
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
   });
 
   // importantly only setup vite in development and after

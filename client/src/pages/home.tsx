@@ -47,22 +47,34 @@ export default function Home() {
         });
       }, 200);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+        clearInterval(progressInterval);
+        setUploadProgress(100);
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Upload failed');
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error || 'Upload failed');
+        }
+
+        setTimeout(() => setUploadProgress(0), 1000);
+        return await response.json();
+      } catch (error) {
+        clearInterval(progressInterval);
+        setUploadProgress(0);
+        
+        if (error instanceof Error) {
+          if (error.message.includes('fetch')) {
+            throw new Error('네트워크 연결을 확인해주세요. 파일이 너무 크거나 서버 연결에 문제가 있을 수 있습니다.');
+          }
+        }
+        throw error;
       }
-
-      setTimeout(() => setUploadProgress(0), 1000);
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/images"] });
@@ -225,7 +237,7 @@ export default function Home() {
         {/* Image Gallery */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">업로드된 이미지</h2>
+            <h2 className="text-2xl font-bold text-slate-900">최근 업로드된 이미지</h2>
             <div className="text-sm text-slate-500">{images.length}개 이미지</div>
           </div>
 
@@ -351,21 +363,17 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 mt-20">
         <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-lg flex items-center justify-center">
                 <Link className="text-white" size={16} />
               </div>
               <span className="font-semibold text-slate-700">ImageLink</span>
             </div>
-            <div className="flex space-x-6 text-sm text-slate-500">
-              <a href="#" className="hover:text-slate-700 transition-colors">개인정보처리방침</a>
-              <a href="#" className="hover:text-slate-700 transition-colors">이용약관</a>
-              <a href="#" className="hover:text-slate-700 transition-colors">문의하기</a>
-            </div>
           </div>
           <div className="border-t border-slate-200 mt-6 pt-6 text-center text-sm text-slate-400">
-            © 2024 ImageLink. 모든 권리 보유.
+            <p>© 2024 ImageLink. 모든 권리 보유.</p>
+            <p className="mt-2">Contact: binsoore@naver.com</p>
           </div>
         </div>
       </footer>
