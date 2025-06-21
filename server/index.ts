@@ -3,8 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Start automatic cleanup of expired images every hour
+    // Start automatic cleanup of expired images every 12 hours
     setInterval(async () => {
       try {
         const { storage } = await import('./storage');
@@ -78,6 +78,6 @@ app.use((req, res, next) => {
       } catch (error) {
         log(`Auto cleanup error: ${error}`);
       }
-    }, 60 * 60 * 1000); // 1 hour
+    }, 12 * 60 * 60 * 1000); // 12 hours
   });
 })();

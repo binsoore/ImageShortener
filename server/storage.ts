@@ -159,7 +159,22 @@ export class MemStorage implements IStorage {
   }
 
   async deleteImage(id: number): Promise<boolean> {
-    return this.images.delete(id);
+    const image = this.images.get(id);
+    if (!image) return false;
+    
+    // Delete file from disk with exception handling
+    try {
+      if (fs.existsSync(image.filePath)) {
+        fs.unlinkSync(image.filePath);
+      }
+    } catch (error) {
+      console.warn(`Failed to delete file from disk: ${image.filePath}`, error);
+      // Continue to remove from memory even if file deletion fails
+    }
+    
+    // Always remove from memory, regardless of file deletion success
+    this.images.delete(id);
+    return true;
   }
 
   async deleteExpiredImages(): Promise<number> {
@@ -168,10 +183,17 @@ export class MemStorage implements IStorage {
     
     for (const [id, image] of Array.from(this.images.entries())) {
       if (image.expiresAt && image.expiresAt <= now) {
-        // Delete file from disk
-        if (fs.existsSync(image.filePath)) {
-          fs.unlinkSync(image.filePath);
+        // Delete file from disk with exception handling
+        try {
+          if (fs.existsSync(image.filePath)) {
+            fs.unlinkSync(image.filePath);
+          }
+        } catch (error) {
+          console.warn(`Failed to delete expired file from disk: ${image.filePath}`, error);
+          // Continue to remove from memory even if file deletion fails
         }
+        
+        // Always remove from memory
         this.images.delete(id);
         deletedCount++;
       }

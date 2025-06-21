@@ -74,7 +74,7 @@ export default function Settings() {
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
-      window.location.reload();
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -89,8 +89,11 @@ export default function Settings() {
   // Delete image mutation
   const deleteMutation = useMutation({
     mutationFn: async (imageId: number) => {
-      const response = await apiRequest(`/api/images/${imageId}`, {
+      const response = await fetch(`/api/images/${imageId}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
       
       if (!response.ok) {
@@ -175,7 +178,7 @@ export default function Settings() {
   // Cleanup expired images
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/cleanup-expired", {
+      const response = await fetch("/api/cleanup", {
         method: "POST",
       });
       

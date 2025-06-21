@@ -335,8 +335,8 @@ export default function Home() {
             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Shield className="text-emerald-600" size={20} />
             </div>
-            <h3 className="font-semibold text-slate-900 mb-2">안전한 저장</h3>
-            <p className="text-slate-600 text-sm">이미지는 안전하게 암호화되어 저장됩니다</p>
+            <h3 className="font-semibold text-slate-900 mb-2">이미지 정책</h3>
+            <p className="text-slate-600 text-sm">업로드된 이미지의 가로 Pixel은 최대 1024로 변경됩니다.<br/>업로드된 이미지는 5일 후 삭제됩니다.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-4">

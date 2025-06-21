@@ -315,19 +315,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/images/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const image = await storage.getImage(id);
       
-      if (!image) {
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid image ID' });
+      }
+
+      // Delete from storage (handles both file and memory cleanup)
+      const success = await storage.deleteImage(id);
+      
+      if (!success) {
         return res.status(404).json({ message: 'Image not found' });
       }
-
-      // Delete file from disk
-      if (fs.existsSync(image.filePath)) {
-        fs.unlinkSync(image.filePath);
-      }
-
-      // Delete from storage
-      await storage.deleteImage(id);
       
       res.json({ message: 'Image deleted successfully' });
     } catch (error) {

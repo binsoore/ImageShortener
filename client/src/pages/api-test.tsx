@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Upload, FileText, Image } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 export default function ApiTest() {
   const [base64Data, setBase64Data] = useState("");
@@ -59,6 +60,7 @@ export default function ApiTest() {
       setResponse(JSON.stringify(result, null, 2));
       
       if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/images"] });
         toast({
           title: "업로드 성공!",
           description: "Base64 API를 통해 이미지가 업로드되었습니다",
@@ -110,6 +112,7 @@ export default function ApiTest() {
       setResponse(JSON.stringify(result, null, 2));
       
       if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/images"] });
         toast({
           title: "업로드 성공!",
           description: "Form Data API를 통해 이미지가 업로드되었습니다",
