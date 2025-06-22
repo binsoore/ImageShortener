@@ -1,0 +1,7 @@
+# Top-level configuration
+name = "image-shortener"
+main = "server/index.ts"
+compatibility_date = "2025-05-05"
+routes = [
+  { pattern = "image.ine.kr", custom_domain = true }
+]
