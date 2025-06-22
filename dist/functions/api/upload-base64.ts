@@ -36,11 +36,24 @@ export async function onRequestPost(context: any) {
 
       const base64Data = data.replace(/^data:image\/[a-z]+;base64,/, '');
       
+      // Calculate actual file size from base64
+      const actualFileSize = Math.round(base64Data.length * 0.75);
+      
+      // Check if file exceeds KV storage limit (10MB)
+      if (actualFileSize > 10 * 1024 * 1024) {
+        return new Response(JSON.stringify({ 
+          message: `파일이 너무 큽니다. 파일 크기: ${Math.round(actualFileSize / 1024 / 1024)}MB, 최대 허용: 10MB` 
+        }), {
+          status: 413,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
       // For Cloudflare Pages Functions, skip client-side resizing
       // Store original image data (resizing will be handled when serving)
       let processedImageData = base64Data;
       let finalMimeType = mimeType;
-      let finalSize = Math.round(base64Data.length * 0.75);
+      let finalSize = actualFileSize;
       
       const storedImageData = {
         id: timestamp,

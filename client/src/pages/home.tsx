@@ -188,11 +188,11 @@ export default function Home() {
     }
     
     // 파일 크기 검증
-    const oversizedFiles = acceptedFiles.filter(file => file.size > 10 * 1024 * 1024);
+    const oversizedFiles = acceptedFiles.filter(file => file.size > 7.5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       toast({
         title: "파일 크기 초과",
-        description: `파일 크기는 10MB 이하여야 합니다: ${oversizedFiles.map(f => f.name).join(', ')}`,
+        description: `파일 크기는 7.5MB 이하여야 합니다: ${oversizedFiles.map(f => f.name).join(', ')}`,
         variant: "destructive",
       });
       return;
@@ -209,7 +209,7 @@ export default function Home() {
       'image/gif': ['.gif'],
       'image/webp': ['.webp'],
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 7.5 * 1024 * 1024, // 7.5MB (base64 encoding increases size)
     multiple: true,
     onDropRejected: (fileRejections) => {
       console.error('File drop rejected:', fileRejections);

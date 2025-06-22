@@ -29,6 +29,16 @@ export async function onRequestPost(context: any) {
       // Generate short ID for URL
       const shortId = Math.random().toString(36).substring(2, 10);
 
+      // Check if file exceeds KV storage limit (10MB for base64)
+      if (file.size > 7.5 * 1024 * 1024) { // 7.5MB original ≈ 10MB base64
+        return new Response(JSON.stringify({ 
+          message: `파일이 너무 큽니다. 파일 크기: ${Math.round(file.size / 1024 / 1024)}MB, 최대 허용: 7.5MB` 
+        }), {
+          status: 413,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
       // For Cloudflare Pages Functions, store original data
       // Image resizing will be handled when serving the image
       const arrayBuffer = await file.arrayBuffer();
