@@ -1,4 +1,0 @@
-# CloudFlare Pages redirects
-/api/* /api/:splat 200
-/i/* /i/:splat 200
-/* /index.html 200
