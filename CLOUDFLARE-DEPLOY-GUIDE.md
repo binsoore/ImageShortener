@@ -29,10 +29,16 @@ dist/
 ### 2단계: 빌드 설정
 ```
 Framework preset: None
-Build command: npm ci && cd client && npx vite build
+Build command: npm ci && cd client && npx vite build --outDir ../dist --emptyOutDir && cp -r ../functions ../dist/ && cp ../_redirects ../dist/
 Build output directory: dist
 Root directory: (비워두기)
 ```
+
+**중요:** 위 빌드 명령어를 정확히 복사해서 사용하세요. 이 명령어는:
+1. 의존성 설치 (npm ci)
+2. React 앱 빌드 (cd client && npx vite build)
+3. Cloudflare Functions 복사 (cp -r ../functions ../dist/)
+4. 라우팅 설정 복사 (cp ../_redirects ../dist/)
 
 ### 3단계: KV 스토리지 설정
 1. Cloudflare Dashboard → Workers & Pages → KV
