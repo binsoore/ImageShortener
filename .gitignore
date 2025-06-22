@@ -3,7 +3,6 @@ node_modules/
 .pythonlibs/
 
 # Build outputs
-dist/
 build/
 
 # Environment variables
