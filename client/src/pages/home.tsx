@@ -176,10 +176,30 @@ export default function Home() {
   }, [uploadMutation]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      uploadMutation.mutate(acceptedFiles);
+    console.log('Files dropped:', acceptedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
+    if (acceptedFiles.length === 0) {
+      toast({
+        title: "업로드할 파일이 없습니다",
+        description: "유효한 이미지 파일을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
     }
-  }, [uploadMutation]);
+    
+    // 파일 크기 검증
+    const oversizedFiles = acceptedFiles.filter(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "파일 크기 초과",
+        description: `파일 크기는 10MB 이하여야 합니다: ${oversizedFiles.map(f => f.name).join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    uploadMutation.mutate(acceptedFiles);
+  }, [uploadMutation, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -191,6 +211,17 @@ export default function Home() {
     },
     maxSize: 10 * 1024 * 1024, // 10MB
     multiple: true,
+    onDropRejected: (fileRejections) => {
+      console.error('File drop rejected:', fileRejections);
+      const errors = fileRejections.map(rejection => 
+        `${rejection.file.name}: ${rejection.errors.map(e => e.message).join(', ')}`
+      ).join('; ');
+      toast({
+        title: "파일 업로드 실패",
+        description: errors,
+        variant: "destructive",
+      });
+    },
   });
 
   const copyToClipboard = async (shortId: string) => {
