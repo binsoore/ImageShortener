@@ -29,33 +29,12 @@ export async function onRequestPost(context: any) {
       // Generate short ID for URL
       const shortId = Math.random().toString(36).substring(2, 10);
 
-      // Process image for resizing if needed
+      // For Cloudflare Pages Functions, store original data
+      // Image resizing will be handled when serving the image
       const arrayBuffer = await file.arrayBuffer();
       let processedData = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       let finalMimeType = file.type;
       let finalSize = file.size;
-      
-      try {
-        // Create canvas for image resizing
-        const imageBitmap = await createImageBitmap(file);
-        
-        if (imageBitmap.width > 1024) {
-          const canvas = new OffscreenCanvas(1024, Math.round(imageBitmap.height * (1024 / imageBitmap.width)));
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-          
-          const resizedBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
-          const resizedArrayBuffer = await resizedBlob.arrayBuffer();
-          const resizedBytes = new Uint8Array(resizedArrayBuffer);
-          
-          processedData = btoa(String.fromCharCode(...resizedBytes));
-          finalMimeType = 'image/jpeg';
-          finalSize = resizedBlob.size;
-        }
-      } catch (resizeError) {
-        console.warn('Image resizing failed, using original:', resizeError);
-        // Use original image if resizing fails
-      }
       
       const imageData = {
         id: timestamp,

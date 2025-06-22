@@ -59,19 +59,29 @@ export default function Home() {
         setUploadProgress(100);
 
         if (!response.ok) {
-          const error = await response.text();
-          throw new Error(error || 'Upload failed');
+          const errorText = await response.text();
+          console.error('Upload failed:', response.status, errorText);
+          throw new Error(`업로드 실패 (${response.status}): ${errorText || 'Upload failed'}`);
         }
 
+        const result = await response.json();
         setTimeout(() => setUploadProgress(0), 1000);
-        return await response.json();
+        return result;
       } catch (error) {
         clearInterval(progressInterval);
         setUploadProgress(0);
         
+        console.error('Upload error:', error);
+        
         if (error instanceof Error) {
-          if (error.message.includes('fetch')) {
+          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
             throw new Error('네트워크 연결을 확인해주세요. 파일이 너무 크거나 서버 연결에 문제가 있을 수 있습니다.');
+          }
+          if (error.message.includes('413') || error.message.includes('Payload Too Large')) {
+            throw new Error('파일이 너무 큽니다. 더 작은 파일을 선택해주세요.');
+          }
+          if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
+            throw new Error('업로드 방식에 문제가 있습니다. 페이지를 새로고침해주세요.');
           }
         }
         throw error;

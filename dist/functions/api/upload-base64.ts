@@ -36,40 +36,11 @@ export async function onRequestPost(context: any) {
 
       const base64Data = data.replace(/^data:image\/[a-z]+;base64,/, '');
       
-      // Convert base64 to ArrayBuffer for image processing
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      // Resize image if needed (using browser APIs in Cloudflare Workers)
+      // For Cloudflare Pages Functions, skip client-side resizing
+      // Store original image data (resizing will be handled when serving)
       let processedImageData = base64Data;
       let finalMimeType = mimeType;
       let finalSize = Math.round(base64Data.length * 0.75);
-      
-      try {
-        // Create canvas for image resizing
-        const blob = new Blob([bytes], { type: mimeType });
-        const imageBitmap = await createImageBitmap(blob);
-        
-        if (imageBitmap.width > 1024) {
-          const canvas = new OffscreenCanvas(1024, Math.round(imageBitmap.height * (1024 / imageBitmap.width)));
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-          
-          const resizedBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
-          const resizedArrayBuffer = await resizedBlob.arrayBuffer();
-          const resizedBytes = new Uint8Array(resizedArrayBuffer);
-          
-          processedImageData = btoa(String.fromCharCode(...resizedBytes));
-          finalMimeType = 'image/jpeg';
-          finalSize = resizedBlob.size;
-        }
-      } catch (resizeError) {
-        console.warn('Image resizing failed, using original:', resizeError);
-        // Use original image if resizing fails
-      }
       
       const storedImageData = {
         id: timestamp,
