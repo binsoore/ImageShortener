@@ -4,12 +4,24 @@
 
 ### 1. CloudFlare Pages 빌드 설정
 
-**Framework preset:** React
-**Build command:**
+**Framework preset:** None
+**수정된 Build command:**
 ```bash
-npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/
+mkdir -p dist && cp -r functions dist/ && cp _redirects dist/ && cp client/index.html dist/index.html && cp dist/index.html dist/404.html
 ```
+
+**화면 표시 문제 해결:**
+- body 태그에 배경색과 기본 스타일 추가
+- 가시성 향상을 위한 CSS 개선
 **Build output directory:** `dist`
+
+**Root directory:** (비워두기)
+**Environment variables:** 없음
+
+### 대안: React 빌드 사용시
+```bash
+npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/functions
+```
 
 ### 2. 반드시 필요한 파일들
 

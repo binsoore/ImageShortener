@@ -8,12 +8,20 @@
 
 ## 2단계: 빌드 설정
 
+**권장 설정:**
+```
+Framework preset: None  
+Build command: mkdir -p dist && cp -r functions dist/ && cp _redirects dist/ && cp client/index.html dist/index.html && cp dist/index.html dist/404.html
+Build output directory: dist
+Root directory: (비워두기)
+Environment variables: (없음)
+```
+
+**React 빌드 시도시:**
 ```
 Framework preset: React
-Build command: npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/
+Build command: npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/functions
 Build output directory: dist
-Root directory: (blank)
-Environment variables: (none needed for basic functionality)
 ```
 
 ## 3단계: KV 스토리지 설정
