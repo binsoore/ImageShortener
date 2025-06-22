@@ -1,19 +1,2 @@
-name = 'image-shortener'
-compatibility_date = "2024-01-15"
-pages_build_output_dir = "dist"
-
-[env.production]
-kv_namespaces = [
-  { binding = "IMAGE_STORE", id = "your-kv-namespace-id", preview_id = "your-preview-kv-namespace-id" }
-]
-
-[env.preview]
-kv_namespaces = [
-  { binding = "IMAGE_STORE", id = "your-preview-kv-namespace-id" }
-]
-
-[[env.production.vars]]
-ENVIRONMENT = "production"
-
-[[env.preview.vars]]
-ENVIRONMENT = "preview"
+# CloudFlare Pages 프로젝트 설정
+# KV 바인딩은 CloudFlare 대시보드에서 설정해야 합니다.

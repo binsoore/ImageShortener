@@ -22,10 +22,10 @@ CloudFlare 대시보드에서:
 3. "Connect to Git" 선택
 4. GitHub 리포지토리 연결
 5. Build settings:
-   - Project name: `imagelink`
+   - Project name: `imagelink` 
    - Production branch: `main`
    - Framework preset: `None`
-   - Build command: `npm install && npm run build`
+   - Build command: `npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/`
    - Build output directory: `dist`
    - Root directory: `/` (루트)
 
@@ -68,7 +68,7 @@ cp _redirects dist/
 cp -r functions dist/
 
 # Pages에 배포
-wrangler pages deploy dist --project-name imagelink
+wrangler pages deploy dist
 ```
 
 ## 배포 후 확인사항

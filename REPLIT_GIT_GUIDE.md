@@ -1,37 +1,62 @@
-# Replit Git 연동 가이드
+# Replit에서 GitHub으로 코드 업로드하기
 
-## 현재 상황
-- Replit 프로젝트: `/home/runner/workspace`
-- 로컬 Git 저장소 존재
-- 3개의 커밋이 이미 완료됨
-- 목표 저장소: https://github.com/binsoore/ImageShortener.git
+## CloudFlare Pages 배포를 위한 GitHub 업로드
 
-## Replit에서 GitHub 연동 방법
+### 1. Replit Git 설정
+Replit에서 Git 설정이 필요합니다:
 
-### 방법 1: Replit UI 사용 (권장)
-1. Replit 편집기에서 좌측 사이드바의 "Version Control" 또는 Git 아이콘 클릭
-2. "Connect to GitHub" 버튼 클릭
-3. GitHub 계정 인증
-4. 기존 저장소 선택: `binsoore/ImageShortener`
-5. "Connect" 클릭하면 자동으로 연동됨
+1. 좌측 패널에서 "Git" 아이콘 클릭
+2. "Initialize repository" 또는 기존 Git 확인
+3. GitHub 계정 연결
 
-### 방법 2: 커맨드라인 (제한적)
+### 2. 파일 정리
+불필요한 파일들이 CloudFlare Pages 빌드에 영향을 주지 않도록:
+
 ```bash
-# 현재 Replit 환경에서는 Git config 잠금으로 인해 제한됨
-# .git/config.lock 파일이 지속적으로 생성되어 차단됨
+# Python 관련 파일 제거 (JavaScript 프로젝트이므로)
+rm -f pyproject.toml uv.lock
+
+# .cfignore 파일로 빌드 제외 설정
 ```
 
-### 방법 3: 수동 업로드
-1. GitHub에서 새 저장소 생성
-2. 파일들을 로컬로 다운로드
-3. Git clone 후 파일 복사
-4. 수동 push
+### 3. Replit에서 GitHub 연결
+1. Replit Git 패널에서 "Connect to GitHub"
+2. 새 리포지토리 생성 또는 기존 리포지토리 선택
+3. 리포지토리 이름: `imagelink`
 
-## 현재 프로젝트 파일 상태
-- 모든 소스코드 완성
-- README.md 작성 완료
-- .gitignore 설정 완료
-- package.json 및 설정 파일들 준비됨
+### 4. 코드 커밋 및 푸시
+Replit Git 패널에서:
+1. 변경사항 확인
+2. 커밋 메시지 입력: "CloudFlare Pages 배포용 이미지 호스팅 서비스"
+3. "Commit & Push" 클릭
 
-## 추천 방법
-Replit UI의 Version Control 기능을 사용하여 GitHub 연동하는 것이 가장 안전하고 확실합니다.
+### 5. CloudFlare Pages 연결
+GitHub 업로드 후:
+1. CloudFlare 대시보드 접속
+2. Workers & Pages > "Create application"
+3. "Pages" 탭 > "Connect to Git"
+4. GitHub 리포지토리 선택: `imagelink`
+5. 빌드 설정:
+   ```
+   Framework preset: None
+   Build command: npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/
+   Build output directory: dist
+   Root directory: /
+   ```
+
+### 6. KV 네임스페이스 설정
+1. CloudFlare 대시보드 > Workers & Pages > KV
+2. "Create a namespace" > 이름: `imagelink-storage`
+3. Pages 프로젝트 > Settings > Functions
+4. KV namespace bindings 추가:
+   - Variable name: `IMAGE_STORE`
+   - KV namespace: `imagelink-storage`
+
+## 주의사항
+
+✅ Python 관련 파일 제거됨 (빌드 오류 방지)
+✅ .cfignore로 불필요한 파일 제외
+✅ npm ci 사용 (더 안정적인 의존성 설치)
+✅ 모든 필수 파일 포함 확인
+
+이제 Replit → GitHub → CloudFlare Pages 순서로 안정적으로 배포할 수 있습니다.

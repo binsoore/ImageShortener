@@ -39,16 +39,21 @@ npx vite build --outDir dist
 cp _redirects dist/
 cp -r functions dist/
 
-# 배포
+# 배포 (프로젝트 처음 생성시)
 wrangler pages deploy dist --project-name imagelink
+
+# 기존 프로젝트 업데이트시
+wrangler pages deploy dist
 ```
 
-#### 2. GitHub Actions 자동 배포
+#### 2. GitHub 자동 배포 (가장 간단)
 1. GitHub 리포지토리에 코드 푸시
 2. CloudFlare Pages에서 GitHub 연결
-3. 빌드 설정:
-   - Build command: `npm install && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/`
-   - Output directory: `dist`
+3. 빌드 명령어:
+   ```
+   npm ci && npx vite build --outDir dist && cp _redirects dist/ && cp -r functions dist/
+   ```
+4. 출력 디렉토리: `dist`
 
 ### ⚙️ CloudFlare 대시보드 설정
 

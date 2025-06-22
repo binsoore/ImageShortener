@@ -28,11 +28,11 @@ wrangler login
 
 ### 4. Pages 프로젝트 배포
 ```bash
-# 처음 배포시
-wrangler pages deploy dist --project-name imagelink
-
-# 기존 프로젝트 업데이트시
+# CloudFlare Pages에 배포
 wrangler pages deploy dist
+
+# 또는 프로젝트 이름 지정
+wrangler pages deploy dist --project-name imagelink
 ```
 
 ## 자동 빌드 스크립트 사용
@@ -75,6 +75,11 @@ wrangler pages deploy dist --env production
 ### Preview (테스트)
 ```bash
 wrangler pages deploy dist --env preview
+```
+
+### 환경 없이 배포 (기본)
+```bash
+wrangler pages deploy dist
 ```
 
 ## 배포 확인
