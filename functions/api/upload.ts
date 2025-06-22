@@ -26,8 +26,8 @@ export async function onRequestPost(context: any) {
       const extension = file.name.split('.').pop() || 'jpg';
       const filename = `images-${timestamp}-${randomId}.${extension}`;
       
-      // Generate short ID for URL
-      const shortId = Math.random().toString(36).substring(2, 10);
+      // Generate unique short ID for URL
+      const shortId = `${timestamp.toString(36)}${Math.random().toString(36).substring(2, 8)}`;
 
       // Check if file exceeds KV storage limit (10MB for base64)
       if (file.size > 7.5 * 1024 * 1024) { // 7.5MB original ≈ 10MB base64

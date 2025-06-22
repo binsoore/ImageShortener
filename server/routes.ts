@@ -112,8 +112,8 @@ async function uploadFromBase64(req: Request, res: Response) {
           finalSize = fs.statSync(filePath).size;
         }
         
-        // Generate short ID
-        const shortId = nanoid(8);
+        // Generate unique short ID
+        const shortId = `${Date.now().toString(36)}${nanoid(6)}`;
         
         // Create image record
         const imageRecord = {
@@ -201,8 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             finalSize = fs.statSync(file.path).size;
           }
           
-          // Generate short ID
-          const shortId = nanoid(8);
+          // Generate unique short ID
+          const shortId = `${Date.now().toString(36)}${nanoid(6)}`;
           
           // Create image record
           const imageData = {
