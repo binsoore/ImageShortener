@@ -1,8 +1,19 @@
-name = "image-shortener"
-compatibility_date = "2025-06-22"
-main = "server/index.ts"
-routes = [
-  { pattern = "image.ine.kr", custom_domain = true }
+name = "imagelink"
+compatibility_date = "2024-01-15"
+pages_build_output_dir = "dist"
+
+[env.production]
+kv_namespaces = [
+  { binding = "IMAGE_STORE", id = "your-kv-namespace-id", preview_id = "your-preview-kv-namespace-id" }
 ]
 
-compatibility_flags = ["nodejs_compat"]
+[env.preview]
+kv_namespaces = [
+  { binding = "IMAGE_STORE", id = "your-preview-kv-namespace-id" }
+]
+
+[[env.production.vars]]
+ENVIRONMENT = "production"
+
+[[env.preview.vars]]
+ENVIRONMENT = "preview"
