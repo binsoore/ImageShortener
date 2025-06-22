@@ -4,3 +4,5 @@ main = "server/index.ts"
 routes = [
   { pattern = "image.ine.kr", custom_domain = true }
 ]
+
+compatibility_flags = ["nodejs_compat"]
